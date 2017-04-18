@@ -10,7 +10,7 @@ def read_data(fn):
         snd = snd / (2.**15)
     else:
         snd = snd / (2.**31)
-    
+
     if len(snd.shape) > 1:
         c1 = np.mean(snd, axis=1)
     else:
