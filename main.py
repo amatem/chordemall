@@ -7,21 +7,29 @@ FILENAME = 'seven.wav'
 def main():
     y, sr = librosa.load(FILENAME)
     D = librosa.stft(y,hop_length=512,win_length=2048)
-    param=0.3
+    har_per_sep(0.3,0.3,200,D)
+
+    #thefile = open('test.txt', 'w')
+    #for item in pow_spec:
+    #	thefile.write("%s\n" % item)
+    '''
+    print pow_spec
+    D_harm, D_perc = librosa.decompose.hpss(D)
+    y_harm = librosa.istft(D_harm)
+    y_perc = librosa.istft(D_perc)
+    librosa.output.write_wav('seven_harm.wav', y_harm, sr)
+    librosa.output.write_wav('seven_perc.wav', y_perc, sr)
+    '''
+def har_per_sep(alpha,param,kmax,D):
     S=np.abs(D)
     pow_spec=(S**(2*param))
     H=pow_spec/2;
     P=pow_spec/2;
-    k=0;
-    alpha=0.3;
-    kmax=200;
     delta_k=0;
     temp_h=H;
     temp_p=P;
     H_old=H[:];
     P_old=P[:]
-    #print pow_spec.shape
-    print len(pow_spec[0])
     for k in range(kmax):
     	for h in range(1,len(pow_spec)-1):
     		for i in range(1,len(pow_spec[0])-1):
@@ -46,18 +54,6 @@ def main():
     y_per=librosa.istft(P);
     librosa.output.write_wav('seven_harm.wav', y_harm, sr)
     librosa.output.write_wav('seven_perc.wav', y_per, sr)
-
-    #thefile = open('test.txt', 'w')
-    #for item in pow_spec:
-    #	thefile.write("%s\n" % item)
-    '''
-    print pow_spec
-    D_harm, D_perc = librosa.decompose.hpss(D)
-    y_harm = librosa.istft(D_harm)
-    y_perc = librosa.istft(D_perc)
-    librosa.output.write_wav('seven_harm.wav', y_harm, sr)
-    librosa.output.write_wav('seven_perc.wav', y_perc, sr)
-    '''
 
 
 if __name__ == '__main__':
