@@ -107,6 +107,9 @@ for qual in ['maj', 'min']:
     for root in ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B']:
         chord_map['{}:{}'.format(root,qual)] = cnt
         cnt += 1
+    chord_map['N'] = cnt
+    cnt += 1
+
 def chord_to_category(chord):
     return chord_map[chord]
 
@@ -114,7 +117,7 @@ def is_subset(bitmap, ground):
     for i in range(len(bitmap)):
         if bitmap[i] == 0 and ground[i] == 1:
             return False
-    return True 
+    return True
 
 QUALITIES = {
     #           1     2     3     4  5     6     7
@@ -157,7 +160,7 @@ def get_majminchord(chord):
        return "{}:{}".format(root_char, 'maj')
     if is_subset(quality, QUALITIES['min']):
        return "{}:{}".format(root_char, 'min')
-    return 'U'
+    return 'N'
 
 def calc_chord_freqs():
     data = read_folder_folder('/Users/neumann/bilkent/eee485/project/chordemall/data/beatles/chordlab/The Beatles/')
