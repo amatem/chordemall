@@ -12,6 +12,7 @@ decorator==4.0.11
 entrypoints==0.2.2
 enum34==1.1.6
 functools32==3.2.3.post2
+future==0.16.0
 html5lib==0.999999999
 ipykernel==4.5.2
 ipython==5.3.0
@@ -27,6 +28,7 @@ jupyter-core==4.3.0
 librosa==0.5.0
 MarkupSafe==1.0
 matplotlib==2.0.0
+mir-eval==0.4
 mistune==0.7.4
 mpmath==0.19
 nbconvert==5.1.1
