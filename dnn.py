@@ -235,6 +235,8 @@ def train_beatles():
     print('Data loaded...')
     dnn = DNN(178*15, learning_rate = 0.0007)
     dnn.gen_data_mappings(raw_X, raw_Y)
+    dnn.load_config('dnn_config.p')
+    print('Config loaded...')
     #print("MEAN: {} - STD: {}", mean, std)
     print('Network initial config completed...')
     dnn.train(raw_X, raw_Y, 100)
@@ -274,6 +276,8 @@ def gen_chromagram_beatles():
 
 if __name__ == '__main__':
     np.random.seed(0)
-    #train_beatles()
+    for i in range(15):
+        print("BATCH NUM: {}".format(i))
+        train_beatles()
     #plot_err()
-    gen_chromagram_beatles()
+    #gen_chromagram_beatles()
