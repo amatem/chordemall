@@ -8,6 +8,7 @@ import librosa
 import matplotlib.pyplot as plt
 import librosa.display
 np.set_printoptions(threshold=np.inf)
+err_correct = 17
 
 def read_lab_file(path):
     rev = []
@@ -167,15 +168,17 @@ def calc_chord_freqs():
     pp = pprint.PrettyPrinter(indent=3)
     alph = {}
     for key in data:
-        print('FILENAME: {}'.format(key))
+        #print('FILENAME: {}'.format(key))
         #pp.pprint(data[key])
         for chord in data[key]:
+            if not get_majminchord(chord[2]):
+                continue
             if not chord[2] in alph:
-                alph[chord[2]] = 1;
+                alph[get_majminchord(chord[2])] = 1;
             else:
-                alph[chord[2]] += 1;
+                alph[get_majminchord(chord[2])] += 1;
     print("ALPHABETSIZE: {}".format(len(alph)))
-    pp.pprint([(key, get_majminchord(key), alph[key]) for key in alph])
+    pp.pprint([(key, alph[key]) for key in alph])
 
 if __name__ == '__main__':
     calc_chord_freqs()
