@@ -229,18 +229,19 @@ class DNN(object):
         self.W_epoch = pickle.load(open(fpath, 'rb'))
         self.W = self.W_epoch[-1]
 
-def train_beatles():
+def train_beatles(batch_num):
     raw_X = pickle.load(open('data/interim/dpp_input.p', 'rb'))
     raw_Y = pickle.load(open('data/interim/dpp_output.p', 'rb'))
     print('Data loaded...')
     dnn = DNN(178*15, learning_rate = 0.0007)
     dnn.gen_data_mappings(raw_X, raw_Y)
-    dnn.load_config('dnn_config.p')
+    if batch_num != 0:
+        dnn.load_config('data/interim/dnn_config.p')
     print('Config loaded...')
     #print("MEAN: {} - STD: {}", mean, std)
     print('Network initial config completed...')
     dnn.train(raw_X, raw_Y, 100)
-    dnn.save_config('dnn_config.p')
+    dnn.save_config('data/interim/dnn_config.p')
 
 def plot_err():
     raw_X = pickle.load(open('data/interim/dpp_input.p', 'rb'))
@@ -248,7 +249,7 @@ def plot_err():
     print('Data loaded...')
     dnn = DNN(178*15, learning_rate = 0.0007)
     dnn.gen_data_mappings(raw_X, raw_Y)
-    dnn.load_config('dnn_config.p')
+    dnn.load_config('data/interim/dnn_config.p')
     print('Config loaded...')
     (err_train, err_test) = dnn.get_training_test_curve(raw_X, raw_Y)
     print(err_train)
@@ -263,7 +264,7 @@ def gen_chromagram_beatles():
     print('Data loaded...')
     dnn = DNN(178*15, learning_rate = 0.0007)
     dnn.gen_data_mappings(raw_X, raw_Y)
-    dnn.load_config('dnn_config.p')
+    dnn.load_config('data/interim/dnn_config.p')
     print('Config loaded...')
     chroma_X, chroma_Y = [], [];
     for i in range(len(raw_X)):
@@ -278,6 +279,6 @@ if __name__ == '__main__':
     np.random.seed(0)
     for i in range(15):
         print("BATCH NUM: {}".format(i))
-        train_beatles()
+        train_beatles(i)
     #plot_err()
     #gen_chromagram_beatles()
