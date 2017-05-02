@@ -1,8 +1,9 @@
 import librosa
 import numpy as np
-import copy
 import pickle
+import copy
 import random
+import json
 import librosa.display
 import matplotlib.pyplot as plt
 np.set_printoptions(threshold=np.inf)
@@ -178,8 +179,8 @@ class DNN(object):
                     M_cap = self.M[l]/(1-self.beta_1**p)
                     V_cap = self.V[l]/(1-self.beta_2**p)
                     self.W[l] = self.W[l] - (1./self.batch_size)*self.learning_rate*(1./np.sqrt(V_cap))*M_cap
-
-            self.W_epoch.append(copy.deepcopy(self.W))
+            if i % 10 == 0:
+                self.W_epoch.append(copy.deepcopy(self.W))
 
     def feedforward(self, X, W):
         X_batch = []
@@ -224,24 +225,31 @@ class DNN(object):
         return self.feedforward(song_x, self.W), song_y
 
     def save_config(self, fpath):
-        pickle.dump(self.W_epoch, open(fpath, 'wb'))
+        with open(fpath, 'w') as f:
+            f.write(json.dumps(self.W_epoch))
+        #pickle.dump(self.W_epoch, open(fpath, 'wb'))
+
     def load_config(self, fpath):
-        self.W_epoch = pickle.load(open(fpath, 'rb'))
+        with open(fpath, 'w') as f:
+            self.W_epoch = json.loads(f.read())
         self.W = self.W_epoch[-1]
 
-def train_beatles(batch_num):
+def train_beatles(num_batches, flag):
     raw_X = pickle.load(open('data/interim/dpp_input.p', 'rb'))
     raw_Y = pickle.load(open('data/interim/dpp_output.p', 'rb'))
     print('Data loaded...')
     dnn = DNN(178*15, learning_rate = 0.0007)
     dnn.gen_data_mappings(raw_X, raw_Y)
-    if batch_num != 0:
-        dnn.load_config('data/interim/dnn_config.p')
-    print('Config loaded...')
-    #print("MEAN: {} - STD: {}", mean, std)
-    print('Network initial config completed...')
-    dnn.train(raw_X, raw_Y, 100)
-    dnn.save_config('data/interim/dnn_config.p')
+    if flag:
+        dnn.load_config('data/interim/dnn_config.json')
+        print('Config loaded...')
+
+    for batch_num in range(num_batches):
+        print("########### BATCH NUM: {}".format(batch_num))
+        #print("MEAN: {} - STD: {}", mean, std)
+        print('Network initial config completed...')
+        dnn.train(raw_X, raw_Y, 100)
+        dnn.save_config('data/interim/dnn_config.json')
 
 def plot_err():
     raw_X = pickle.load(open('data/interim/dpp_input.p', 'rb'))
@@ -249,7 +257,7 @@ def plot_err():
     print('Data loaded...')
     dnn = DNN(178*15, learning_rate = 0.0007)
     dnn.gen_data_mappings(raw_X, raw_Y)
-    dnn.load_config('data/interim/dnn_config.p')
+    dnn.load_config('data/interim/dnn_config.json')
     print('Config loaded...')
     (err_train, err_test) = dnn.get_training_test_curve(raw_X, raw_Y)
     print(err_train)
@@ -264,7 +272,7 @@ def gen_chromagram_beatles():
     print('Data loaded...')
     dnn = DNN(178*15, learning_rate = 0.0007)
     dnn.gen_data_mappings(raw_X, raw_Y)
-    dnn.load_config('data/interim/dnn_config.p')
+    dnn.load_config('data/interim/dnn_config.json')
     print('Config loaded...')
     chroma_X, chroma_Y = [], [];
     for i in range(len(raw_X)):
@@ -281,15 +289,13 @@ def config_debug():
     print('Data loaded...')
     dnn = DNN(178*15, learning_rate = 0.0007)
     dnn.gen_data_mappings(raw_X, raw_Y)
-    dnn.load_config('data/interim/dnn_config.p')
+    dnn.load_config('data/interim/dnn_config.json')
     print('Config loaded...')
     print(len(dnn.W_epoch))
 
 if __name__ == '__main__':
     np.random.seed(0)
-    config_debug()
-    #for i in range(15):
-    #    print("BATCH NUM: {}".format(i))
-    #    train_beatles(i)
+    #config_debug()
+    train_beatles(10, False)
     #plot_err()
     #gen_chromagram_beatles()
