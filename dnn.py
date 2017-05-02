@@ -275,10 +275,21 @@ def gen_chromagram_beatles():
     pickle.dump(chroma_X, open('data/interim/dnn_c_inp.p', 'wb'))
     pickle.dump(chroma_Y, open('data/interim/dnn_c_out.p', 'wb'))
 
+def config_debug():
+    raw_X = pickle.load(open('data/interim/dpp_input.p', 'rb'))
+    raw_Y = pickle.load(open('data/interim/dpp_output.p', 'rb'))
+    print('Data loaded...')
+    dnn = DNN(178*15, learning_rate = 0.0007)
+    dnn.gen_data_mappings(raw_X, raw_Y)
+    dnn.load_config('data/interim/dnn_config.p')
+    print('Config loaded...')
+    print(len(dnn.W_epoch))
+
 if __name__ == '__main__':
     np.random.seed(0)
-    for i in range(15):
-        print("BATCH NUM: {}".format(i))
-        train_beatles(i)
+    config_debug()
+    #for i in range(15):
+    #    print("BATCH NUM: {}".format(i))
+    #    train_beatles(i)
     #plot_err()
     #gen_chromagram_beatles()
