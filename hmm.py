@@ -351,8 +351,6 @@ def test_beatles_hmm():
             print("emission")
             print_chord(hmm.emission_mean)
             print_chord(hmm.emission_var)
-            print_chord(hmm.emission_var_inv)
-            print_chord(hmm.emission_var_det)
             print("raw_Y")
             pp.pprint(raw_Y[0][1])
             print("y_cap")

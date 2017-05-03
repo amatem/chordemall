@@ -28,7 +28,6 @@ class DNN(object):
         self.epsilon = 10e-8
         self.train_err = []
         self.test_err = []
-        self.W_epoch = []
 
         init_mult = (2./(num_features + num_outputs))
         self.M.append(np.zeros((num_nodes, num_features+1), dtype=np.float64))
@@ -145,6 +144,7 @@ class DNN(object):
 
     def train(self, X, Y, num_epoch):
         p = 1
+        loss_train, loss_test = ([], [])
         for i in range(num_epoch):
             print("EPOCH #{}".format(i))
             for batch_x, batch_y in self.next_batch(X, Y):
@@ -179,8 +179,12 @@ class DNN(object):
                     M_cap = self.M[l]/(1-self.beta_1**p)
                     V_cap = self.V[l]/(1-self.beta_2**p)
                     self.W[l] = self.W[l] - (1./self.batch_size)*self.learning_rate*(1./np.sqrt(V_cap))*M_cap
-            if i % 10 == 0:
-                self.W_epoch.append(copy.deepcopy(self.W))
+
+            if (num_epoch + 1)%10 == 0:
+                ltrain, ltest = self.get_training_test_loss(X, Y)
+                loss_train.append(ltrain)
+                loss_test.append(ltest)
+        return loss_train, loss_test
 
     def feedforward(self, X, W):
         X_batch = []
@@ -198,19 +202,17 @@ class DNN(object):
 
         return X_batch
 
-    def get_training_test_curve(self, X, Y):
+    def get_training_test_loss(self, X, Y):
         (X_test, Y_test) = self.get_test_data(X, Y)
         (X_train, Y_train) = self.get_train_sampled(X, Y)
         err_train = []
         err_test = []
         it = 1
-        for w in self.W_epoch:
-            print("#{}".format(it))
-            Y_train_cap = self.feedforward(X_train, w)
-            Y_test_cap = self.feedforward(X_test, w)
-            err_train.append(DNN.loss(Y_train_cap, Y_train))
-            err_test.append(DNN.loss(Y_test_cap, Y_test))
-            it += 1
+        print("#{}".format(it))
+        Y_train_cap = self.feedforward(X_train, w)
+        Y_test_cap = self.feedforward(X_test, w)
+        err_train = DNN.loss(Y_train_cap, Y_train)
+        err_test = DNN.loss(Y_test_cap, Y_test)
         return (err_train, err_test)
 
     def get_chroma(self, X, Y, song_num):
@@ -225,14 +227,10 @@ class DNN(object):
         return self.feedforward(song_x, self.W), song_y
 
     def save_config(self, fpath):
-        with open(fpath, 'w') as f:
-            f.write(json.dumps(self.W_epoch))
-        #pickle.dump(self.W_epoch, open(fpath, 'wb'))
+        pickle.dump(self.W, open(fpath, 'wb'))
 
     def load_config(self, fpath):
-        with open(fpath, 'w') as f:
-            self.W_epoch = json.loads(f.read())
-        self.W = self.W_epoch[-1]
+        self.W = pickle.load(open(fpath, 'rb'))
 
 def train_beatles(num_batches, flag):
     raw_X = pickle.load(open('data/interim/dpp_input.p', 'rb'))
@@ -241,7 +239,7 @@ def train_beatles(num_batches, flag):
     dnn = DNN(178*15, learning_rate = 0.0007)
     dnn.gen_data_mappings(raw_X, raw_Y)
     if flag:
-        dnn.load_config('data/interim/dnn_config.json')
+        dnn.load_config('data/interim/dnn_config.p')
         print('Config loaded...')
 
     for batch_num in range(num_batches):
@@ -249,22 +247,42 @@ def train_beatles(num_batches, flag):
         #print("MEAN: {} - STD: {}", mean, std)
         print('Network initial config completed...')
         dnn.train(raw_X, raw_Y, 100)
-        dnn.save_config('data/interim/dnn_config.json')
+        dnn.save_config('data/interim/dnn_config_{}.p'.format(num_batches))
 
-def plot_err():
+def train_toy(num_batches):
+    toy_X = pickle.load(open('data/interim/toy_input.p', 'rb'))
+    toy_Y = pickle.load(open('data/interim/toy_output.p', 'rb'))
+    print("Data loaded...")
+    dnn = DNN(178*15, learning_rate = 0.0007)
+    dnn.gen_data_mappings(toy_X, toy_Y)
+    loss_tr = []
+    loss_te = []
+    print("DNN configured...")
+    for batch_num in range(num_batches):
+        print('Batch num #{}'.format(batch_num))
+        loss_train, loss_test = dnn.train(toy_X, toy_Y, 100)
+        loss_tr += loss_train
+        loss_te += loss_test
+    print('DNN trained')
+    open('toy_loss.json', 'w').write(json.dumps((loss_tr, loss_te)))
+    plot_err('toy_loss.json', 'w')
+
+def plot_err(fpath):
+    (loss_train, loss_test) = json.loads(open(fpath, 'r').read())
+    print(loss_train)
+    print(loss_test)
+    plt.plot(loss_train)
+    plt.plot(loss_test)
+    plt.show()
+
+def gen_toy_dataset():
     raw_X = pickle.load(open('data/interim/dpp_input.p', 'rb'))
     raw_Y = pickle.load(open('data/interim/dpp_output.p', 'rb'))
     print('Data loaded...')
-    dnn = DNN(178*15, learning_rate = 0.0007)
-    dnn.gen_data_mappings(raw_X, raw_Y)
-    dnn.load_config('data/interim/dnn_config.json')
-    print('Config loaded...')
-    (err_train, err_test) = dnn.get_training_test_curve(raw_X, raw_Y)
-    print(err_train)
-    print(err_test)
-    plt.plot(err_train)
-    plt.plot(err_test)
-    plt.show()
+    toy_X = raw_X[1:3]
+    toy_Y = raw_Y[1:3]
+    pickle.dump(toy_X, open('data/interim/toy_input.p', 'wb'))
+    pickle.dump(toy_Y, open('data/interim/toy_output.p', 'wb'))
 
 def gen_chromagram_beatles():
     raw_X = pickle.load(open('data/interim/dpp_input.p', 'rb'))
@@ -291,11 +309,12 @@ def config_debug():
     dnn.gen_data_mappings(raw_X, raw_Y)
     dnn.load_config('data/interim/dnn_config.json')
     print('Config loaded...')
-    print(len(dnn.W_epoch))
 
 if __name__ == '__main__':
     np.random.seed(0)
     #config_debug()
-    train_beatles(10, False)
+    #gen_toy_dataset()
+    train_toy(10)
+    #train_beatles(10, False)
     #plot_err()
     #gen_chromagram_beatles()
