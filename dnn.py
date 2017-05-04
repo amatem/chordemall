@@ -105,25 +105,28 @@ class DNN(object):
         return (songnum, n)
 
     def get_test_data(self, X, y):
-        rev_x = np.zeros((self.num_test, self.num_features), dtype=np.float64)
-        rev_y = np.zeros((self.num_test, self.num_outputs), dtype=np.float64)
-
         shuffled = range(self.num_data, self.num_data+self.num_test)
         np.random.shuffle(shuffled)
         data_size = 3000
-        for i in range(3000):
+        if(self.num_test < 3000):
+            data_size = self.num_test
+        rev_x = np.zeros((data_size, self.num_features), dtype=np.float64)
+        rev_y = np.zeros((data_size, self.num_outputs), dtype=np.float64)
+        for i in range(data_size):
             s, ind = self.nth_instance(shuffled[i])
             rev_x[i] = X[s][...,ind:ind+2*self.offset+1].T.flatten()
             rev_y[i] = y[s][1][ind+self.offset]
         return rev_x, rev_y
 
     def get_train_sampled(self, X, y):
-        rev_x = np.zeros((self.num_test, self.num_features), dtype=np.float64)
-        rev_y = np.zeros((self.num_test, self.num_outputs), dtype=np.float64)
         shuffled = range(self.num_data)
         np.random.shuffle(shuffled)
         #data_size = int(self.num_data * 0.1)
         data_size = int(3000)
+        if self.num_data < 3000:
+            data_size = self.num_data
+        rev_x = np.zeros((data_size, self.num_features), dtype=np.float64)
+        rev_y = np.zeros((data_size, self.num_outputs), dtype=np.float64)
         for i in range(data_size):
             s, ind = self.nth_instance(shuffled[i])
             rev_x[i] = X[s][...,ind:ind+2*self.offset+1].T.flatten()
@@ -162,6 +165,8 @@ class DNN(object):
                     if l != self.num_layers:
                         new_x = np.concatenate((np.ones((V_batch[l].shape[0],1)), new_x),
                                                axis=1)
+                    print new_x.flags
+                    read_input()
                     X_batch.append(new_x)
 
                 # Backprop
@@ -180,7 +185,7 @@ class DNN(object):
                     V_cap = self.V[l]/(1-self.beta_2**p)
                     self.W[l] = self.W[l] - (1./self.batch_size)*self.learning_rate*(1./np.sqrt(V_cap))*M_cap
 
-            if (num_epoch + 1)%10 == 0:
+            if (i + 1)%10 == 0:
                 ltrain, ltest = self.get_training_test_loss(X, Y)
                 loss_train.append(ltrain)
                 loss_test.append(ltest)
@@ -207,10 +212,8 @@ class DNN(object):
         (X_train, Y_train) = self.get_train_sampled(X, Y)
         err_train = []
         err_test = []
-        it = 1
-        print("#{}".format(it))
-        Y_train_cap = self.feedforward(X_train, w)
-        Y_test_cap = self.feedforward(X_test, w)
+        Y_train_cap = self.feedforward(X_train, self.W)
+        Y_test_cap = self.feedforward(X_test, self.W)
         err_train = DNN.loss(Y_train_cap, Y_train)
         err_test = DNN.loss(Y_test_cap, Y_test)
         return (err_train, err_test)
@@ -245,11 +248,10 @@ def train_beatles(num_batches, flag):
     for batch_num in range(num_batches):
         print("########### BATCH NUM: {}".format(batch_num))
         #print("MEAN: {} - STD: {}", mean, std)
-        print('Network initial config completed...')
         dnn.train(raw_X, raw_Y, 100)
-        dnn.save_config('data/interim/dnn_config_{}.p'.format(num_batches))
+        dnn.save_config('data/interim/dnn_config_{}.p'.format(batch_num))
 
-def train_toy(num_batches):
+def train_toy(num_batches, is_debug):
     toy_X = pickle.load(open('data/interim/toy_input.p', 'rb'))
     toy_Y = pickle.load(open('data/interim/toy_output.p', 'rb'))
     print("Data loaded...")
@@ -264,8 +266,10 @@ def train_toy(num_batches):
         loss_tr += loss_train
         loss_te += loss_test
     print('DNN trained')
-    open('toy_loss.json', 'w').write(json.dumps((loss_tr, loss_te)))
-    plot_err('toy_loss.json', 'w')
+    print loss_tr
+    if is_debug:
+        open('toy_loss.json', 'w').write(json.dumps((loss_tr, loss_te)))
+        plot_err('toy_loss.json')
 
 def plot_err(fpath):
     (loss_train, loss_test) = json.loads(open(fpath, 'r').read())
@@ -314,7 +318,8 @@ if __name__ == '__main__':
     np.random.seed(0)
     #config_debug()
     #gen_toy_dataset()
-    train_toy(10)
-    #train_beatles(10, False)
+    #plot_err('toy_loss.json')
+    #train_toy(1, False)
+    train_beatles(3, False)
     #plot_err()
     #gen_chromagram_beatles()
