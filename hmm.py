@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 import pprint
 np.set_printoptions(suppress=True)
 pp = pprint.PrettyPrinter(indent=2)
-#DEBUG = True
-DEBUG = False
+DEBUG = True
+#DEBUG = False
 #FILENAME = '/Volumes/CORSAIR/input/The Beatles/A Hard Day\'s Night/02 I Should Have Known Better.mp3'
 
 def har_per_sep(alpha,param,kmax,D):
@@ -375,6 +375,6 @@ def test_beatles_hmm():
 
 if __name__ == '__main__':
     #gen_beatles_dataset()
-    #train_beatles_dnn()
+    train_beatles_dnn()
     test_beatles_hmm()
     #main()

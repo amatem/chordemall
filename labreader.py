@@ -11,22 +11,17 @@ np.set_printoptions(threshold=np.inf)
 err_correct = 17
 
 def read_lab_file(path):
-    rev = []
-    with open(path) as f:
-        lines = f.readlines()
-        for line in lines:
-            raw = line.split()
-            if len(raw) > 3:
-                print("Irregular line found: {}".format(raw))
-            rev.append((float(raw[0]), float(raw[1]), raw[2]))
-
-    return rev
+    (intervals, labels) = mir_eval.io.load_labeled_intervals(path)
+    (sample_times, sample_labels) = mir_eval.util.intervals_to_samples(intervals, labels, sample_size=0.01)
+    return sample_labels
 
 def read_folder(folder):
     res = {}
     for f in os.listdir(folder):
         if f.endswith('.lab'):
-            res[f] = read_lab_file(path.join(folder, f))
+            (intervals, labels) = mir_eval.io.load_labeled_intervals(path.join(folder,f))
+            (sample_times, sample_labels) = mir_eval.utils.intervals_to_samples(intervals, labels, sample_size=0.01)
+            res[f] = sample_labels
     return res
 
 def read_folder_folder(folder):
@@ -168,18 +163,19 @@ def calc_chord_freqs():
     pp = pprint.PrettyPrinter(indent=3)
     alph = {}
     for key in data:
-        #print('FILENAME: {}'.format(key))
-        #pp.pprint(data[key])
+        print('FILENAME: {}'.format(key))
+        pp.pprint(data[key])
         for chord in data[key]:
-            if not get_majminchord(chord[2]):
+            if not get_majminchord(chord):
                 continue
-            if not chord[2] in alph:
-                alph[get_majminchord(chord[2])] = 1;
+            if not chord in alph:
+                alph[get_majminchord(chord)] = 1;
             else:
-                alph[get_majminchord(chord[2])] += 1;
+                alph[get_majminchord(chord)] += 1;
     print("ALPHABETSIZE: {}".format(len(alph)))
     pp.pprint([(key, alph[key]) for key in alph])
 
 if __name__ == '__main__':
+    print(get_majminchord('C'))
     calc_chord_freqs()
     #gen_beatles_dataset()
