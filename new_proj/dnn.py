@@ -132,6 +132,7 @@ def train_network(num_features, learning_rate=0.0008, num_outputs=12, num_nodes=
                                epochs=30, validation_data=D.next_validation_norm(),
                                validation_steps=D.get_num_valid(),
                                callbacks=[EarlyStopping(monitor='val_loss', patience=5, verbose=2)])
+    pp.pprint(hist.history)
     pickle.dump(hist.history, open('loss.p', 'wb'))
     model.save('dnn_model.h5')
 
