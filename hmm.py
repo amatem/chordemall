@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 import pprint
 np.set_printoptions(suppress=True)
 pp = pprint.PrettyPrinter(indent=2)
-DEBUG = True
-#DEBUG = False
+#DEBUG = True
+DEBUG = False
 #FILENAME = '/Volumes/CORSAIR/input/The Beatles/A Hard Day\'s Night/02 I Should Have Known Better.mp3'
 
 def har_per_sep(alpha,param,kmax,D):
@@ -315,7 +315,7 @@ def transform_to_hmm_format(Y, Y_norm):
     return Y_new
 
 def train_beatles_dnn():
-    raw_X = pickle.load(open('data/interim/dnn_c_inp.p', 'rb'))
+    raw_X = pickle.load(open('data/interim/dnn_chroma.p', 'rb'))
     raw_Y = pickle.load(open('data/interim/dnn_c_out.p', 'rb'))
     real_Y = pickle.load(open('data/hmmdata/hmm_output.p', 'rb'))
     raw_Y = transform_to_hmm_format(raw_Y, real_Y)
@@ -332,7 +332,7 @@ def test_beatles_hmm():
     hmm = HMM(12, 25)
     hmm.load_config('data/hmmdata/hmm_config.p')
     print("Config loaded...")
-    raw_X = pickle.load(open('data/interim/dnn_c_inp.p', 'rb'))
+    raw_X = pickle.load(open('data/interim/dnn_chroma.p', 'rb'))
     raw_Y = pickle.load(open('data/interim/dnn_c_out.p', 'rb'))
     real_Y = pickle.load(open('data/hmmdata/hmm_output.p', 'rb'))
     raw_Y = transform_to_hmm_format(raw_Y, real_Y)
@@ -340,8 +340,8 @@ def test_beatles_hmm():
     true_pred = 0
     all_pred = 0
     conf = np.zeros((hmm.num_categories, hmm.num_categories), dtype=np.float64)
-    #for i in range(len(raw_X)):
-    for i in range(1):
+    for i in range(len(raw_X)):
+    #for i in range(1):
         y_cap = hmm.test(raw_X, i)
         if DEBUG:
             print("initial")
@@ -355,26 +355,26 @@ def test_beatles_hmm():
             pp.pprint(raw_Y[0][1])
             print("y_cap")
             pp.pprint(y_cap)
-        n = min(len(y_cap), len(raw_Y[0][1]))
-        err = mir_eval.chord.mirex(raw_Y[0][1][:n], y_cap[:n])
+        n = min(len(y_cap), len(raw_Y[i][1]))
+        err = mir_eval.chord.mirex(raw_Y[i][1][:n], y_cap[:n])
         for j in range(n):
             conf[chord_to_category(get_majminchord(raw_Y[i][1][j]))-1][chord_to_category(y_cap[j])-1] += 1
         true_pred += np.sum(err)
         all_pred += len(err)
         print("Song#{}".format(i))
-        print y_cap
-        print(raw_Y[0][1])
+        #print y_cap
+        #print(raw_Y[0][1])
 
     print("True Predicted: {}\nData Size: {}\nMisclassification Rate:{}"
           .format(true_pred,
                   all_pred,
                   float(all_pred-true_pred)/all_pred))
     print('Confidence Matrix:')
-    print(conf)
+    print('\n'.join(["{}: {}".format(category_to_chord(i+1), conf[i]) for i in range(hmm.num_categories)]))
 
 
 if __name__ == '__main__':
     #gen_beatles_dataset()
-    train_beatles_dnn()
+    #train_beatles_dnn()
     test_beatles_hmm()
     #main()

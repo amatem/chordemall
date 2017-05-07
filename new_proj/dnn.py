@@ -96,7 +96,7 @@ class Dataset(object):
 
                 yield (batch_x, batch_y)
 
-def train_network(num_features, learning_rate=0.0008, num_outputs=12, num_nodes=512):
+def train_network(num_features, learning_rate=0.008, num_outputs=12, num_nodes=100):
     raw_X = pickle.load(open('../data/interim/dpp_input.p', 'rb'))
     raw_Y = pickle.load(open('../data/interim/dpp_output.p', 'rb'))
     print('Data loaded...')
@@ -126,12 +126,12 @@ def train_network(num_features, learning_rate=0.0008, num_outputs=12, num_nodes=
     model.add(Activation('sigmoid'))
 
     model.compile(loss=keras.losses.binary_crossentropy,
-                  optimizer=keras.optimizers.Adam(lr=learning_rate), metrics=['accuracy'], verbose=2)
+                  optimizer=keras.optimizers.Adam(lr=learning_rate), metrics=['accuracy'])
 
     hist = model.fit_generator(D.next_normalized(), steps_per_epoch=D.get_num_iters(),
                                epochs=30, validation_data=D.next_validation_norm(),
                                validation_steps=D.get_num_valid(),
-                               callbacks=[EarlyStopping(monitor='val_loss', patience=5, verbose=2)])
+                               callbacks=[EarlyStopping(monitor='val_loss', patience=5)])
     pp.pprint(hist.history)
     pickle.dump(hist.history, open('loss.p', 'wb'))
     model.save('dnn_model.h5')
@@ -157,7 +157,10 @@ def gen_beatles_dataset():
             song_y[i] = raw_Y[s][1][ind+D.offset]
 
         chroma = model.predict(song_x)
+        #plot_chromagram(raw_X, chroma, song_y, song_num)
         new_X.append(chroma)
+        print(chroma.shape)
+    print len(new_X)
     pickle.dump(new_X, open('../data/interim/dnn_chroma.p', 'wb'))
 
 def plot_chromagram(raw_X, chroma, song_y, song_num):
@@ -169,10 +172,12 @@ def plot_chromagram(raw_X, chroma, song_y, song_num):
 
     plt.subplot(3, 1, 2, sharex=ax1)
     librosa.display.specshow(chroma.T, y_axis='chroma')
+    plt.colorbar()
     plt.tight_layout()
 
     plt.subplot(3, 1, 3, sharex=ax1)
     librosa.display.specshow(song_y.T, y_axis='chroma')
+    plt.colorbar()
     plt.tight_layout()
 
     plt.show()
@@ -185,6 +190,7 @@ def test():
     plt.show()
 
 if __name__ == '__main__':
-    train_network(178*15)
+    #plot_chromagram()
+    #train_network(178*15)
     #test()
-    #gen_beatles_dataset()
+    gen_beatles_dataset()
