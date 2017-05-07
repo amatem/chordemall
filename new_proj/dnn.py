@@ -5,8 +5,8 @@ np.random.seed(0)
 import pickle
 import librosa.display
 import matplotlib.pyplot as plt
-from keras.models import Sequential
-from keras.layers import Dense, Activation, Dropout
+from keras.models import Sequential, load_model
+from keras.layers import Dense, Activation, Dropout, BatchNormalization
 from keras.callbacks import EarlyStopping
 import keras
 import pprint
@@ -106,25 +106,36 @@ def train_network(num_features, learning_rate=0.0008, num_outputs=12, num_nodes=
     print('Data generator created...')
 
     model = Sequential()
-    model.add(Dense(num_nodes, input_shape=(num_features,), activation='relu'))
+    model.add(Dense(num_nodes, input_shape=(num_features,)))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(num_nodes, activation='relu'))
+
+    model.add(Dense(num_nodes))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(num_nodes, activation='relu'))
+
+    model.add(Dense(num_nodes))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(num_outputs, activation='sigmoid'))
+
+    model.add(Dense(num_outputs))
+    model.add(BatchNormalization())
+    model.add(Activation('sigmoid'))
 
     model.compile(loss=keras.losses.binary_crossentropy,
                   optimizer=keras.optimizers.Adam(lr=learning_rate), metrics=['accuracy'], verbose=2)
 
     hist = model.fit_generator(D.next_normalized(), steps_per_epoch=D.get_num_iters(),
-                               epochs=15, validation_data=D.next_validation_norm(),
+                               epochs=30, validation_data=D.next_validation_norm(),
                                validation_steps=D.get_num_valid(),
-                               callbacks=[EarlyStopping(monitor='val_loss', patience=3, verbose=2)])
+                               callbacks=[EarlyStopping(monitor='val_loss', patience=5, verbose=2)])
     pickle.dump(hist.history, open('loss.p', 'wb'))
     model.save('dnn_model.h5')
 
-def gen_test_chromagram():
+def gen_beatles_dataset():
     raw_X = pickle.load(open('../data/interim/dpp_input.p', 'rb'))
     raw_Y = pickle.load(open('../data/interim/dpp_output.p', 'rb'))
     print('Data loaded...')
@@ -132,21 +143,38 @@ def gen_test_chromagram():
     print(D.num_data, D.batch_size)
     print(D.get_num_iters())
 
-    model.load('dnn_model.h5')
-    song_num = 0
-    song_x = np.zeros((D.sample_sizes[song_num], D.num_features), dtype=np.float)
-    song_y = np.zeros((D.sample_sizes[song_num], D.num_outputs), dtype=np.float)
-    prev = sum(D.sample_sizes[:song_num])
-    for i in range(D.sample_sizes[song_num]):
-        s, ind = song_num, i
-        song_x[i] = X[s][...,ind:ind+2*self.offset+1].T.flatten()
-        song_y[i] = Y[s][1][ind+self.offset]
+    model = load_model('dnn_model.h5')
+    new_X = []
+    for song_num in range(len(raw_X)):
+        print('Song NUM:{}'.format(song_num))
+        song_x = np.zeros((D.sample_sizes[song_num], D.num_features), dtype=np.float)
+        song_y = np.zeros((D.sample_sizes[song_num], D.num_outputs), dtype=np.float)
+        prev = sum(D.sample_sizes[:song_num])
+        for i in range(D.sample_sizes[song_num]):
+            s, ind = song_num, i
+            song_x[i] = raw_X[s][...,ind:ind+2*D.offset+1].T.flatten()
+            song_y[i] = raw_Y[s][1][ind+D.offset]
 
-    chroma = model.predict(song_x)
-    print chroma
-    print song_y
-    pickle.dump(chroma, open('first_chroma_out.p', 'wb'))
-    pickle.dump(song_y, open('first_chroma_ground.p', 'wb'))
+        chroma = model.predict(song_x)
+        new_X.append(chroma)
+    pickle.dump(new_X, open('../data/interim/dnn_chroma.p', 'wb'))
+
+def plot_chromagram(raw_X, chroma, song_y, song_num):
+    plt.figure()
+    ax1 = plt.subplot(3, 1, 1)
+    librosa.display.specshow(raw_X[song_num])
+    plt.colorbar()
+    plt.tight_layout()
+
+    plt.subplot(3, 1, 2, sharex=ax1)
+    librosa.display.specshow(chroma.T, y_axis='chroma')
+    plt.tight_layout()
+
+    plt.subplot(3, 1, 3, sharex=ax1)
+    librosa.display.specshow(song_y.T, y_axis='chroma')
+    plt.tight_layout()
+
+    plt.show()
 
 def test():
     hist = pickle.load(open('loss.p', 'rb'))
@@ -156,5 +184,6 @@ def test():
     plt.show()
 
 if __name__ == '__main__':
-    #train_network(178*15)
-    test()
+    train_network(178*15)
+    #test()
+    #gen_beatles_dataset()
