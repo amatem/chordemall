@@ -187,10 +187,13 @@ def test():
     pp.pprint(hist)
     plt.plot(hist['loss'])
     plt.plot(hist['val_loss'])
+    plt.xlabel('Number of Epochs')
+    plt.ylabel('Mean Binary Cross Entropy Error(Loss)')
+    plt.title('Loss vs. Epochs')
     plt.show()
 
 if __name__ == '__main__':
     #plot_chromagram()
     #train_network(178*15)
-    #test()
-    gen_beatles_dataset()
+    test()
+    #gen_beatles_dataset()

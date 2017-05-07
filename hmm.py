@@ -1,6 +1,7 @@
 import librosa
 import numpy as np
 import copy
+import math
 import mir_eval
 import os
 from os import path
@@ -331,17 +332,18 @@ def print_chord(d):
 def test_beatles_hmm():
     hmm = HMM(12, 25)
     hmm.load_config('data/hmmdata/hmm_config.p')
+    val = 5
     print("Config loaded...")
     raw_X = pickle.load(open('data/interim/dnn_chroma.p', 'rb'))
     raw_Y = pickle.load(open('data/interim/dnn_c_out.p', 'rb'))
     real_Y = pickle.load(open('data/hmmdata/hmm_output.p', 'rb'))
     raw_Y = transform_to_hmm_format(raw_Y, real_Y)
     print("Data loaded...")
-    true_pred = 0
-    all_pred = 0
+    true_pred = []
+    all_pred = []
     conf = np.zeros((hmm.num_categories, hmm.num_categories), dtype=np.float64)
-    for i in range(len(raw_X)):
-    #for i in range(1):
+    for i in range(len(X)):
+    #for i in range():
         y_cap = hmm.test(raw_X, i)
         if DEBUG:
             print("initial")
@@ -359,18 +361,34 @@ def test_beatles_hmm():
         err = mir_eval.chord.mirex(raw_Y[i][1][:n], y_cap[:n])
         for j in range(n):
             conf[chord_to_category(get_majminchord(raw_Y[i][1][j]))-1][chord_to_category(y_cap[j])-1] += 1
-        true_pred += np.sum(err)
-        all_pred += len(err)
+        true_pred.append(np.sum(err))
+        all_pred.append(len(err))
         print("Song#{}".format(i))
         #print y_cap
         #print(raw_Y[0][1])
 
-    print("True Predicted: {}\nData Size: {}\nMisclassification Rate:{}"
-          .format(true_pred,
-                  all_pred,
-                  float(all_pred-true_pred)/all_pred))
-    print('Confidence Matrix:')
-    print('\n'.join(["{}: {}".format(category_to_chord(i+1), conf[i]) for i in range(hmm.num_categories)]))
+    acc = float(sum(true_pred))/sum(all_pred)
+    std = math.sqrt((1./sum(all_pred))*sum([(true_pred[i] - acc)**2 for i in range(len(true_pred))]))/val
+    print("ACCURACY: {} - STD: {}".format(acc, std))
+
+    for i in range(len(conf)):
+        if sum(conf[i]) != 0:
+            conf[i] = [float(conf[i][j]) / sum(conf[i]) for j in range(len(conf[i]))]
+
+    fig, ax = plt.subplots()
+    heatmap = ax.pcolor(conf, cmap=plt.cm.Blues, alpha=0.8)
+    ax.set_yticks(np.arange(len(conf))+0.5, minor=False)
+    ax.set_xticks(np.arange(len(conf[0]))+0.5, minor=False)
+
+    ax.invert_yaxis()
+    ax.xaxis.tick_top()
+
+    ax.set_xticklabels([category_to_chord(i) for i in range(1, 26)])
+    ax.set_yticklabels([category_to_chord(i) for i in range(1, 26)])
+    plt.xticks(rotation=90)
+
+    plt.show()
+
 
 
 if __name__ == '__main__':
